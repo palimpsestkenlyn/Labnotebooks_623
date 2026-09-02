@@ -775,5 +775,69 @@ need to subtract 1 for the header line. finals:
 - Zebrafish_ElectricBabyWhale_RBH: 9341
 - Zebrafish_ElectricEel_RBH: 10185 
 
-
 Counts and full answers to Part 5 questions written up in PS1_answers.txt.
+
+## Part 4
+
+Determine the number of reciprocal best hits per species combination in the python script or a bash script.
+
+```
+
+wc -l *_RBH.tsv
+
+10663 ElectricEel_ElectricBabyWhale_RBH.tsv
+
+9036 Human_ElectricBabyWhale_RBH.tsv
+
+9023 Human_ElectricEel_RBH.tsv
+
+7962 Human_Zebrafish_RBH.tsv
+
+9342 Zebrafish_ElectricBabyWhale_RBH.tsv
+
+10186 Zebrafish_ElectricEel_RBH.tsv
+
+56212 total
+
+```
+
+As there is a header line added to each file, -1 should be subtracted from each total (which I did in my head rather than algorithmically bc I am very advanced) so the final counts of RBH per species combination are as follows:
+
+ElectricEel_ElectricBabyWhale: 10662
+
+Human_ElectricBabyWhale_RBH: 9035
+
+Human_ElectricEel_RBH: 9022
+
+Human_Zebrafish_RBH: 7961
+
+Zebrafish_ElectricBabyWhale_RBH: 9341
+
+Zebrafish_ElectricEel_RBH: 10185
+
+  
+
+## Part 5
+
+1. How does the number of RBH’s vary across combinations? Any ideas why there is variance (biological or technical)?
+
+RBH counts were highest between the two electric fish species (Eel-Pka, 10,662) and lowest for any pairing involving human (Human-Zebrafish, 7,961, the lowest overall). This tracks with evolutionary distance: human diverged from the fish lineages much earlier than the fish diverged from each other, giving more time for gene duplication, loss, and divergence to create a lot of differences and break 1:1 orthology. Also not surprising that two fish (who would be more closely related to eachother than say a human) would have a lot of orthologs as they would have a lot of shared ancestery, meaning lots of genes that haven't diverged or turned into paralogs or been lost in speciation/lineage splits. Annotation quality could also contribute, but doesn't fully explain the pattern, since zebrafish has an extremely well studied and one assumes pretty completely curated genome and still produced the lowest RBH count when paired with human, suggesting evolutionary distance is the stronger driver here. But in some cases data could also be a technical aspect (low data quality in the genome of a comparison species) that would explain variance.
+
+  
+
+2. Describe 1 situation where that you could use 1 or more of your reciprocal best hits file(s) either in an analysis or a workflow.
+
+This could be used to look at phylogeny or evolutionary relationships between species. Having just read about PSMC, it seems like you could apply a similar theoretical framework here. Using coalescent theory and mutation-rate-calibrated time estimation, you could look at when species diverged based on when orthologous genes had their most recent common ancestor (coalescence time), then aggregate or bin that data across all RBH pairs to estimate a divergence rate and work backwards to a split time. I am sure there are fancier tools now (like genespace or orthofinder) that do this better, but it is an option. You could also use this to identify possible orthologs in not well annotated species to identify similar genes to measure in a differential expression experiment.
+
+  
+
+3. What are some limits to the RBH approach?
+
+It does not take synteny into account. It is only using sequence similarity as a metric for ortholog identification, and this has gaps as without synteny (location/features surrounding the sequence) there can be multiple hits that are not the best or not true orthologs. So this can be an initial fairly easy way to probe at the evolutionary relationship between two species (genes) by doing this comparison directly. It is less demanding in terms of compute so it can scale and be done without as many resources. But it does not tell the whole picture, where something more complete like genespace or even orthofinder take more variables and possibly sequences into account to build a more complete picture. It also only catches strict 1:1 relationships by design, so a gene that duplicated in one lineage gets excluded entirely, even if one of the resulting copies/paralogs is a real ortholog that retained the original ancestral function and would be worthy of comparison. That means RBH misses a category of possible orthologs, so it is narrower due to filtering down to only the best. It is also only a species to species comaparison so again it can lack the broader comparison.
+
+  
+
+4. Why did we use protein sequences instead of gene sequences in this analysis?
+
+Using protein sequences is a way to cut down on a lot of messy noise that can complicate the picture. With codon degeneracy there can be changes in DNA/RNA sequences that do not result in protein changes so do not always face the same selection pressure. That means there are more dissimilarities that must be worked through looking for matches which is computationally intensive. Using just the protein sequence hones in on the "functional" aspect and makes comparisons more directed. It also cuts out the noise related to introns, by removing those, the sequence comparison is only between the coding regions as they are represneted in the final protein sequence. This cuts down again on just amount of data to process, but biologically is also important as introns may be under less selective pressure so they may have more mutations or even vary in lengths significantly between species. This again makes a sequence alignment difficult so removing introns simplifies things. Basically the protein sequence is the more conserved aspect and also the least computationally intensive so it makes a better and easier comparison.
+
