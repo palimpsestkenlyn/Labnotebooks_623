@@ -497,6 +497,8 @@ Fill out answers.md and upload everything to github. The end for now.
 
 
 # Part 2: RBH in 623: started 8.27.26
+
+Environment: Python 3.14.6
 ## Log: chronological
 
 ### 8.27.26
@@ -510,9 +512,49 @@ Through discussion with others, apparently the cases that the script needs to ha
 - Missing gene name in biomart (blank field handled) for both files
 - Evalue not at the extreme (e.g. `0.0`) a normal non-zero best hit, and handles numbers as scientific notation correctly.
 
-8.30.26
-Initial exploration and setup. Decided to use files from projects rather than my outputs from PS7 since will need new files for new species anyways. Cut down on issues. copy the 12 blastp .txt files into my own directory. Decided to just stay in the 621-PS7 repo and folder on talapas. made a new directory called 623_RBH to work in
-sorted the files and created new ouput sorted files for my own sanity. baby steps:
+### 8.30.26
+Initial exploration and setup. Decided to use files from projects rather than my outputs from PS7 since will need new files for new species anyways. Cut down on issues. 
+INPUTS:
+```
+Human-Zebrafish:
+/projects/bgmp/shared/Bi623/PS1/blasthits/Dre_query_Hsa_db.txt
+/projects/bgmp/shared/Bi623/PS1/blasthits/Hsa_query_Dre_db.txt
+/projects/bgmp/shared/Bi623/PS1/biomart/Dre_biomart_v116.txt
+/projects/bgmp/shared/Bi623/PS1/biomart/Hsa_biomart_v116.txt
+
+Human-ElectricEel:
+/projects/bgmp/shared/Bi623/PS1/blasthits/Hsa_query_Eel_db.txt
+/projects/bgmp/shared/Bi623/PS1/blasthits/Eel_query_Hsa_db.txt
+/projects/bgmp/shared/Bi623/PS1/biomart/Hsa_biomart_v116.txt
+/projects/bgmp/shared/Bi623/PS1/biomart/Eel_biomart_v116.txt
+
+Human-ElectricBabyWhale:
+/projects/bgmp/shared/Bi623/PS1/blasthits/Hsa_query_Pka_db.txt
+/projects/bgmp/shared/Bi623/PS1/blasthits/Pka_query_Hsa_db.txt
+/projects/bgmp/shared/Bi623/PS1/biomart/Hsa_biomart_v116.txt
+/projects/bgmp/shared/Bi623/PS1/biomart/Pka_biomart_v116.txt
+
+Zebrafish-ElectricEel:
+/projects/bgmp/shared/Bi623/PS1/blasthits/Dre_query_Eel_db.txt
+/projects/bgmp/shared/Bi623/PS1/blasthits/Eel_query_Dre_db.txt
+/projects/bgmp/shared/Bi623/PS1/biomart/Dre_biomart_v116.txt
+/projects/bgmp/shared/Bi623/PS1/biomart/Eel_biomart_v116.txt
+
+Zebrafish-ElectricBabyWhale:
+/projects/bgmp/shared/Bi623/PS1/blasthits/Dre_query_Pka_db.txt
+/projects/bgmp/shared/Bi623/PS1/blasthits/Pka_query_Dre_db.txt
+/projects/bgmp/shared/Bi623/PS1/biomart/Dre_biomart_v116.txt
+/projects/bgmp/shared/Bi623/PS1/biomart/Pka_biomart_v116.txt
+
+ElectricEel-ElectricBabyWhale:
+/projects/bgmp/shared/Bi623/PS1/blasthits/Eel_query_Pka_db.txt
+/projects/bgmp/shared/Bi623/PS1/blasthits/Pka_query_Eel_db.txt
+/projects/bgmp/shared/Bi623/PS1/biomart/Eel_biomart_v116.txt
+/projects/bgmp/shared/Bi623/PS1/biomart/Pka_biomart_v116.txt
+```
+
+copy the 12 blastp .txt files into my own directory. Decided to just stay in the 621-PS7 repo and folder on talapas. made a new directory called 623_RBH to work in
+sorted the files and created new output sorted files for my own sanity. baby steps:
 
 ```
 sort -k1,1 -k11,11g Dre_query_Hsa_db.txt > Dre_query_Hsa_sorted.txt
@@ -653,3 +695,85 @@ def get_best_hits(filename: str) -> dict[str, str]:
 11. `if not is_tied:`  since it's not tied, proceed. `best_hits[query] = best_subject`  store the pair: `best_hits["ENSDARP00000000004"] = "ENSP00000417654"`.
 12. Loop moves to the next query (`ENSDARP00000000005`), repeats the same 11 steps for it.
 13. Once every query in the file's been processed, `return best_hits` hands back the completed dictionary.
+***THIS does not work, only looking at top 2 values for tie, not catching other case where there is the same queryID and sequenceID but different evalues, not real tie shouldn't be thrown out. need to adapt
+
+#### 8.31.26
+
+Fixed the tie logic from yesterday. Was only checking the top 2 lines which missed cases where a 3rd+ line had the same evalue as the top one, or where the same subject showed up more than once at the same evalue (not a real tie, just multiple alignment chunks for the same match). Now walking through all lines in a query's group, collecting every DISTINCT subject that shares the top evalue into a set, only calling it a tie if that set has more than 1 subject in it. Fixes both problems at once.
+
+Added argparse so can run this on all 6 species combos without editing the script each time. Takes `-f1`/`-f2` for the two sorted blastp files (forward and reverse direction), `-b1`/`-b2` for the two biomart files, `-o` for output path.
+
+Also wrote `get_biomart_lookup()` to build protein_id = (gene_id, gene_name) dicts from the biomart files. Skips header line, skips any row with a blank protein ID since that's the lookup key, stores empty string for missing gene name per the assignment's formatting note.
+
+`find_reciprocal_hits()` compares the two best-hit dicts, keeps a pair only if species1's best hit is some species2 protein AND that species2 protein's best hit points back to the original species1 query.
+
+Final output step writes the header row + one line per RBH pair, pulling gene ID/name from the biomart lookups for both proteins, falling back to empty strings if a protein isn't found in biomart at all.
+
+Ran the script on all 6 species combinations (sorted files as input for both directions per pair) as an sbatch /projects/bgmp/hodapp/bioinfo/Bi621/PS/palimpsestkenlyn-Bi621-PS7/623_RBH/RBHsbatch.sh):
+
+Final script, output files, pseudocode, and answers all live in `/projects/bgmp/hodapp/bioinfo/Bi621/PS/palimpsestkenlyn-Bi621-PS7/623_RBH`
+test files and blast hits are in sub folders: `/623_RBH/blasthits` and `/623_RBH/test_files`
+
+Output statistics/summary: 
+
+```
+Human-Zebrafish:
+Percent of CPU this job got: 99%
+Elapsed (wall clock) time (h:mm:ss or m:ss): 0:03.75
+Maximum resident set size (kbytes): 148056
+Exit status: 0
+
+Human-ElectricEel:
+Percent of CPU this job got: 99%
+Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.28
+Maximum resident set size (kbytes): 145392
+Exit status: 0
+
+Human-ElectricBabyWhale:
+Percent of CPU this job got: 99%
+Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.48
+Maximum resident set size (kbytes): 142044
+Exit status: 0
+
+Zebrafish-ElectricEel:
+Percent of CPU this job got: 99%
+Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.81
+Maximum resident set size (kbytes): 50512
+Exit status: 0
+
+Zebrafish-ElectricBabyWhale:
+Percent of CPU this job got: 99%
+Elapsed (wall clock) time (h:mm:ss or m:ss): 0:03.08
+Maximum resident set size (kbytes): 45848
+Exit status: 0
+
+ElectricEel-ElectricBabyWhale:
+Percent of CPU this job got: 99%
+Elapsed (wall clock) time (h:mm:ss or m:ss): 0:01.86
+Maximum resident set size (kbytes): 45980
+Exit status: 0
+```
+
+### 9.1.26
+Summary output of files to count # of RBH: 
+```
+wc -l *_RBH.tsv
+  10663 ElectricEel_ElectricBabyWhale_RBH.tsv
+   9036 Human_ElectricBabyWhale_RBH.tsv
+   9023 Human_ElectricEel_RBH.tsv
+   7962 Human_Zebrafish_RBH.tsv
+   9342 Zebrafish_ElectricBabyWhale_RBH.tsv
+  10186 Zebrafish_ElectricEel_RBH.tsv
+  56212 total
+```
+need to subtract 1 for the header line. finals:
+  
+- ElectricEel_ElectricBabyWhale: 10662
+- Human_ElectricBabyWhale_RBH: 9035
+- Human_ElectricEel_RBH: 9022
+- Human_Zebrafish_RBH: 7961 
+- Zebrafish_ElectricBabyWhale_RBH: 9341
+- Zebrafish_ElectricEel_RBH: 10185 
+
+
+Counts and full answers to Part 5 questions written up in PS1_answers.txt.
