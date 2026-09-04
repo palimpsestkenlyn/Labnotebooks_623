@@ -381,13 +381,13 @@ Notes/Questions/Wonderings:
 
 STAR's `--sjdbOverhang` parameter sets the length of genomic sequence flanking each annotated splice junction, used to build the splice junction database from the GTF. Formula: max(read length) - 1. Default value if unspecified: 100.
 
-Trimmed read lengths for this dataset are variable as MINLENGTH floor of 35 (from Trimmomatic settings), majority of reads around 150bp. Textbook value based on max read length would be 149. Assignment instructions (mirrored from PS8/Bi621) specify five required parameters for genomeGenerate (`--runThreadN`, `--runMode`, `--genomeDir`, `--genomeFastaFiles`, `--sjdbGTFfile`); `--sjdbOverhang` is absent from that list. ==How much of a difference would this make, and should i adjust? ==NO its fine
+Trimmed read lengths for this dataset are variable as MINLENGTH floor of 35 (from Trimmomatic settings), majority of reads around 150bp. Textbook value based on max read length would be 149. Assignment instructions (mirrored from PS8/Bi621) specify five required parameters for genomeGenerate (`--runThreadN`, `--runMode`, `--genomeDir`, `--genomeFastaFiles`, `--sjdbGTFfile`); `--sjdbOverhang` is absent from that list. fine as is with the default, confirmed with Hope.
 
 **STAR genomeGenerate- `--genomeSAindexNbases`**
 
 Genome: campylomormyrus.fasta, 823M, 1497 contigs(?) (checked via `ls -lh` and `grep -c ">"`).
 
-Note on `--genomeSAindexNbases`: STAR default is 14, tuned for large genomes. For genomes under ~1–2 Gb, especially with reduced contiguity (1497 contigs is obviously not chromosome-level), the STAR manual recommends scaling this down using min(14, log2(GenomeLength)/2 − 1). For this genome size, the calculated value lands close to 14, so a warning in the log is not expected but should be checked for on job completion, and if thrown, would need to be adjusted down. ADJUSTED DOWN TO 13
+Note on `--genomeSAindexNbases`: STAR default is 14, tuned for large genomes. For genomes under ~1–2 Gb, especially with reduced contiguity (1497 contigs is obviously not chromosome-level), the STAR manual recommends scaling this down using min(14, log2(GenomeLength)/2 − 1). For this genome size, the calculated value lands close to 14, so a warning in the log is not expected but should be checked for on job completion, and if thrown, would need to be adjusted down. ADJUSTED DOWN TO 13, also was fine for other people. not a real warning. 
 
 ##### Alignments (trimmed paired reads against database created above)
 
@@ -473,11 +473,27 @@ cd /projects/bgmp/hodapp/bioinfo/Bi623/PR2/Project2_QAA/6_C_compressirostris/Sta
 
 Usage Summary:
 
+```
+Command being timed: "pixi run STAR --runThreadN 8 --runMode alignReads --outFilterMultimapNmax 3 --outSAMunmapped Within KeepPairs --alignIntronMax 1000000 --alignMatesGapMax 1000000 --readFilesCommand zcat --readFilesIn /projects/bgmp/hodapp/bioinfo/Bi623/PR2/Project2_QAA/4_trimmomatic_outputs/SRR25630303_1_paired.fastq.gz /projects/bgmp/hodapp/bioinfo/Bi623/PR2/Project2_QAA/4_trimmomatic_outputs/SRR25630303_2_paired.fastq.gz --genomeDir /projects/bgmp/hodapp/bioinfo/Bi623/PR2/Project2_QAA/6_C_compressirostris/Campylomormyrus_compressirostris.dryad_c59zw3rcj.STAR_2.7.11b --outFileNamePrefix SRR25630303_"
+	
+	Percent of CPU this job got: 730%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 9:31.23
+	Maximum resident set size (kbytes): 10254756
+	Exit status: 0
+	
+	
+	Command being timed: "pixi run STAR --runThreadN 8 --runMode alignReads --outFilterMultimapNmax 3 --outSAMunmapped Within KeepPairs --alignIntronMax 1000000 --alignMatesGapMax 1000000 --readFilesCommand zcat --readFilesIn /projects/bgmp/hodapp/bioinfo/Bi623/PR2/Project2_QAA/4_trimmomatic_outputs/SRR25630398_1_paired.fastq.gz /projects/bgmp/hodapp/bioinfo/Bi623/PR2/Project2_QAA/4_trimmomatic_outputs/SRR25630398_2_paired.fastq.gz --genomeDir /projects/bgmp/hodapp/bioinfo/Bi623/PR2/Project2_QAA/6_C_compressirostris/Campylomormyrus_compressirostris.dryad_c59zw3rcj.STAR_2.7.11b --outFileNamePrefix SRR25630398_"
+	Percent of CPU this job got: 747%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 7:44.82
+	Maximum resident set size (kbytes): 10256648
+	Exit status: 0
+```
+
 #### Counting - mapped and unmapped reads in SAM (from alignments above)
 Use 621_PS8 script for this 621_count_mappedreads.py copied into the Bi623/PR2/Project2_QAA for use...
 
 
-changed my PS8 script to take argparse to accept a file rather than hardcoded. ==I just had it print is that sufficient???? ==
+changed my PS8 script to take argparse to accept a file rather than hardcoded. 
 ```
 python 621_count_mappedreads.py -f /projects/bgmp/hodapp/bioinfo/Bi623/PR2/Project2_QAA/6_C_compressirostris_sample.alignments/Star_alignments/SRR25630303/SRR25630303_Aligned.out.sam
 File: /projects/bgmp/hodapp/bioinfo/Bi623/PR2/Project2_QAA/6_C_compressirostris_sample.alignments/Star_alignments/SRR25630303/SRR25630303_Aligned.out.sam
@@ -492,16 +508,56 @@ Mapped reads: 64341367
 Unmapped reads: 4777469
 ```
 
-
-Count reads that map to features ==what does this mean???==
-htseq-count
+#### htseq- Count reads that map to features 
 
 
-RUN the sbatch for the 4 scripts in /projects/bgmp/hodapp/bioinfo/Bi623/PR2/Project2_QAA/6_C_compressirostris_sample.alignments/4_htseq_counts
+RUN htseq
 
-ICA4...also where the %
+ran with sbatch for the 4 scripts in /projects/bgmp/hodapp/bioinfo/Bi623/PR2/Project2_QAA/6_C_compressirostris_sample.alignments/4_htseq_counts
 
-for question 15-
+lots of issues and failed runs here. originally used -i with gene_id and GTF file, errors indicated that the GFF was needed. Switched to GFF file and then used -i with ID which seemed to the the corresponding field. However this produced near 1:1 counts per feature indicating that something seemed off. Turns out that was tracking exons individually as each ID was unique. Switched to Parent as this was the same for all exons related to a single gene so resulted in actual accurate mappings/counts. 
+
+Successful setting were:
+```
+-i Parent  for all 4 files
+
+then each sample/file SRR run once with each orientation set:
+--stranded=yes 
+
+--stranded=reverse
+```
+
+Usage Summary:
+
+```
+Command being timed: "pixi run htseq-count --stranded=yes -i Parent SRR25630303_Aligned.out.sam /projects/bgmp/hodapp/bioinfo/Bi623/PR2/Project2_QAA/6_C_compressirostris_sample.alignments/1_Input_data/campylomormyrus.gff"
+	Percent of CPU this job got: 99%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 19:07.62
+	Maximum resident set size (kbytes): 154904
+	Exit status: 0
+	
+	Command being timed: "pixi run htseq-count --stranded=reverse -i Parent SRR25630303_Aligned.out.sam /projects/bgmp/hodapp/bioinfo/Bi623/PR2/Project2_QAA/6_C_compressirostris_sample.alignments/1_Input_data/campylomormyrus.gff"
+	Percent of CPU this job got: 98%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 19:19.46
+	Maximum resident set size (kbytes): 156584
+	Exit status: 0
+	
+	Command being timed: "pixi run htseq-count --stranded=yes -i Parent SRR25630398_Aligned.out.sam /projects/bgmp/hodapp/bioinfo/Bi623/PR2/Project2_QAA/6_C_compressirostris_sample.alignments/1_Input_data/campylomormyrus.gff"
+	Percent of CPU this job got: 99%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 15:15.39
+	Maximum resident set size (kbytes): 154940
+	Exit status: 0
+	
+	Command being timed: "pixi run htseq-count --stranded=reverse -i Parent SRR25630398_Aligned.out.sam /projects/bgmp/hodapp/bioinfo/Bi623/PR2/Project2_QAA/6_C_compressirostris_sample.alignments/1_Input_data/campylomormyrus.gff"
+	Percent of CPU this job got: 99%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 15:30.24
+	Maximum resident set size (kbytes): 153364
+	Exit status: 0
+
+```
+
+Output files are txt of reads to gene features. Count to see if this is stranded or unstranded library data. If stranded which setting (forward vs reverse) is "correct" = would be indicated by a large majority of reads that map to features. 
+
 SRR25630303_htseqcounts_forwardstranded
 total: 41636330
 ```
@@ -527,7 +583,7 @@ PM $ grep -v '^__' SRR25630303_htseqcounts_reversestranded.txt | awk '{sum+=$2} 
 24841228
 ```
 mapped total: 24841228
-Crh_rhy50_EO_6cm_1_htseqcounts_[forORrev]stranded.txt FOR SRR25630303
+Crh_rhy50_EO_6cm_1_htseqcounts_revstranded.txt FOR SRR25630303
 
 
 SRR25630398_htseqcounts_forwardstranded
@@ -538,6 +594,7 @@ awk '{sum+=$2} END {print sum}' SRR25630398_htseqcounts_forwardstranded.txt
 total: 34559418
 
 CcoxCts_rhy107_EO_adult_2_htseqcounts_[forORrev]stranded.txt FOR SRR25630398
+CcoxCts_rhy107_EO_adult_2_htseqcounts_revstranded.txt FOR SRR25630398
 
 ```
 grep -v '^__' SRR25630398_htseqcounts_forwardstranded.txt | awk '{sum+=$2} END {print sum}'
@@ -559,12 +616,39 @@ grep -v '^__' SRR25630398_htseqcounts_reversestranded.txt | awk '{sum+=$2} END {
 ```
 mapped: 18653979
 
+SUMMARY statistics/output:
 
+| Sample      | Forward (yes)                      | Reverse                              |
+| ----------- | ---------------------------------- | ------------------------------------ |
+| SRR25630303 | 1,368,032 / 41,636,330 = **3.29%** | 24,841,228 / 41,636,330 = **59.67%** |
+| SRR25630398 | 1,001,555 / 34,559,418 = **2.90%** | 18,653,979 / 34,559,418 = **53.98%** |
 
-Factor, the totals of mapped reads. 
-answer 15 in answers md. 
-move files,
-rename FINAL HTCseq files 
-make sure to put the name of my repo for my lab notebook SOMEPLACE in a file before uploading to git...
-upload to git
-update lab notebook
+For both samples, the proportion of reads assigned to features was substantially higher under `--stranded=reverse` than under `--stranded=yes`. SRR25630303 showed 59.7% of reads counted under reverse-stranded settings versus 3.3% under forward-stranded. SRR25630398 showed 54.0% under reverse versus 2.9% under forward. This large asymmetry indicates these libraries are strand-specific, and that `--stranded=reverse` is the correct parameter for downstream differential expression analysis with this type of library prep and data as the higher proportion of feature assignments for reads indicates this is producing the correct feature assignments. This means only the files processed with this setting should be considered for downstream analysis since it reflects accurate feature level read assignment rather than the mismatched, underrepresented counts produced under the incorrect strand assumption.
+
+Environment (from pixi toml as of 9.3.26):
+
+[workspace]
+channels = ["conda-forge", "bioconda"]
+name = "Project2_QAA"
+platforms = ["linux-64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+fastqc = ">=0.12.1,<0.13"
+cutadapt = ">=5.2,<6"
+trimmomatic = ">=0.41,<0.42"
+matplotlib = ">=3.11.1,<4"
+pandas = ">=3.0.5,<4"
+star = ">=2.7.11b,<3"
+samtools = ">=1.23.1,<2"
+numpy = ">=2.5.2,<3"
+htseq = ">=2.1.2,<3"
+agat = ">=1.7.0,<2"
+
+Copies final output files to Project2_Part3 under git repo folder and renamed:
+
+CcoxCts_rhy107_EO_adult_2_htseqcounts_revstranded.txt FOR SRR25630398
+
+Crh_rhy50_EO_6cm_1_htseqcounts_revstranded.txt FOR SRR25630303
