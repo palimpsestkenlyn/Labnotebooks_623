@@ -1,7 +1,6 @@
 
+Environment:
 
-
-vdb-dump- filename SRR -info will return info in bits so have to convert
 
 ### 8.27.26
 
@@ -207,10 +206,23 @@ zcat /projects/bgmp/hodapp/bioinfo/Bi623/PR2/Project2_QAA/trimmomatic_outputs/SR
 Now have txt files with the distributions. plot. have to install plotting on talaps for this environment, so could put them in /projects/bgmp/hodapp/bioinfo/Bi623/PR2/Project2_QAA where we were told to put the pixi, and then move the outputs into the Repo for upload.... orrrr? Yes doing that, will move finals. Cannot do multiple sample bar graphs in matplot lib without like setting the distances? ah. transparent (alpha = ) doesn't work to overlay the two its too messy. Pandas? still looks terrible. huh.
 
 
-## Notes
-
+### Scratch Notes
 FOR kegg or GO, (says hope) current info we have in terms of gene names are not real/known in databases, so we will need to convert. take our genes, find orthologs in the csv file hope gives us to match, then use the names from the known orthologs to get names for our unknown named ones, then can search in KEGG or Go.
 orthologs from csv file, fish 
+
+DOWNLOAD FILES FROM CANVAS....for the part says hope...
+
+for FINAL REPORT, version and relevant flags...for example:
+"we trimmed reads w/ cutadapt (v1.2, A=AA, a=TT) +trimmomatic(v.4.0 minlength 35....)"
+not include things like the fastqc results in detail, results are more pertaining to the differential analysis info (more figures in this than project1)
+methods, 2-4 paragraphs...
+intro: 2 paragraphs
+results: 1-3 paragraphs
+discussion: 1-2 paragraphs
+
+project1 even shorter than the report on project2
+how many things intersected with bedtools.... depth would be the one site that we choose...only figure included in this report?
+vdb-dump- filename SRR -info will return info in bits so have to convert
 
 ### 9.2.26 Part 3
 #### installing packages
@@ -652,3 +664,7 @@ Copies final output files to Project2_Part3 under git repo folder and renamed:
 CcoxCts_rhy107_EO_adult_2_htseqcounts_revstranded.txt FOR SRR25630398
 
 Crh_rhy50_EO_6cm_1_htseqcounts_revstranded.txt FOR SRR25630303
+
+
+### Part 4 
+This was just following the steps as outlined.... see Rmd. 
